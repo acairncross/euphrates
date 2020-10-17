@@ -1,0 +1,28 @@
+packages: .
+
+-- Add constraint to function passed to smap
+source-repository-package
+  type: git
+  location: https://github.com/acairncross/clash-compiler.git
+  tag: eb8027c5bcd01cb0d5f0d5ee28d4b69f5f7dd52b
+  subdir: clash-prelude
+
+-- Most recent parent of the smap fork
+source-repository-package
+  type: git
+  location: https://github.com/clash-lang/clash-compiler.git
+  tag: 1ccadf371bf5c3c19e16327b21370a56294edd11
+  subdir: clash-ghc
+
+source-repository-package
+  type: git
+  location: https://github.com/clash-lang/clash-compiler.git
+  tag: 1ccadf371bf5c3c19e16327b21370a56294edd11
+  subdir: clash-lib
+
+package clash-prelude
+  -- 'large-tuples' generates tuple instances for various classes up to the
+  -- GHC imposed maximum of 62 elements. This severely slows down compiling
+  -- Clash, and triggers Template Haskell bugs on Windows. Hence, we disable
+  -- it by default. This will be the default for Clash >=1.4.
+  flags: -large-tuples
