@@ -12,6 +12,9 @@ description:
 
 category:      Hardware
 
+extra-source-files::
+  README.md
+
 source-repository head
   type:     git
   location: https://github.com/acairncross/euphrates.git
