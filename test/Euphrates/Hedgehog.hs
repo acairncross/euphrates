@@ -40,10 +40,10 @@ matrixToGraph n css = G.mkGraph
 prop_non_negative :: Property
 prop_non_negative = property $ do
   css <- forAll (flowNetwork d4)
-  assert (runNetwork @System (network d4 css) >= 0)
+  assert (runNetwork @System css (network d4) >= 0)
 
 -- Use FGL as a reference implementation
 prop_matches_fgl :: Property
 prop_matches_fgl = property $ do
   css <- forAll (flowNetwork d8)
-  runNetwork @System (network d8 css) === maxFlow (matrixToGraph d8 css) 0 7
+  runNetwork @System css (network d8) === maxFlow (matrixToGraph d8 css) 0 7

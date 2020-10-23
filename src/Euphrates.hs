@@ -92,17 +92,19 @@ network
   => Real a
   => NFDataX a
   => SNat n
-  -> Vec n (Vec n a)
-  -- ^ Capacities
   -> (HiddenClockResetEnable dom
-    => (Signal dom (Vec n (Vec n a)), Signal dom (Vec n a)))
-  -- ^ (Flows, Excesses)
-network n@SNat css =
+    => Signal dom Bool
+    -- ^ Valid / Reset Flows
+    -> Signal dom (Vec n (Vec n a))
+    -- ^ Capacities
+    -> (Signal dom (Vec n (Vec n a)), Signal dom (Vec n a)))
+    -- ^ (Flows, Excesses)
+network n@SNat = \flowRst css ->
   let nodes :: HiddenClockResetEnable dom => Signal dom (Vec n (a, Vec n a))
       nodes = bundle $
         smap @n
           (\u () ->
-            liftA3 (node @n u (at' u css)) (at' u <$> es) hs (at' u <$> fss))
+            (node @n u) <$> (at' u <$> css) <*> (at' u <$> es) <*> hs <*> (at' u <$> fss))
           (replicate n ())
 
       -- Heights'
@@ -123,9 +125,9 @@ network n@SNat css =
 
       -- Initially all flows set to 0 except outgoing edges from the source
       -- are saturated
-      fss0 :: Vec n (Vec n a)
-      fss0 =
-        let cs = at' d0 css
+      capacitiesToInitialFlows :: Vec n (Vec n a) -> Vec n (Vec n a)
+      capacitiesToInitialFlows css0 =
+        let cs = at' d0 css0
         in zipWith (\c fs -> replace (0 :: Int) (negate c) fs) cs
           $ replace (0 :: Int) cs
           $ replicate n
@@ -140,7 +142,13 @@ network n@SNat css =
             -- Addition lifted over Signal and two layers of Vec
             (^+^) = liftA2 . zipWith . zipWith $ (+)
 
-        in register fss0 (fss ^+^ fssD ^+^ fssDT)
+            fss0 :: Vec n (Vec n a)
+            fss0 = replicate n $ replicate n 0
+
+        in
+          mux flowRst
+            (capacitiesToInitialFlows <$> css)
+            (register fss0 (fss ^+^ fssD ^+^ fssDT))
 
       -- Excesses
       es :: HiddenClockResetEnable dom => Signal dom (Vec n a)
@@ -170,9 +178,16 @@ runNetwork
   => NFDataX a
   => Num a
   => Ord a
-  => (HiddenClockResetEnable dom
-    => (Signal dom (Vec n (Vec n a)), Signal dom (Vec n a)))
+  => Vec n (Vec n a)
+  -- ^ Capacities
+  -> (HiddenClockResetEnable dom
+    => Signal dom Bool
+    -> Signal dom (Vec n (Vec n a))
+    -> (Signal dom (Vec n (Vec n a)), Signal dom (Vec n a)))
   -> a
-runNetwork nw =
-  let samples = sample $ fmap excessesToFlowValue $ snd $ nw
+runNetwork css nw =
+  let valid :: HiddenClockResetEnable dom => Signal dom Bool
+      valid = register True $ pure False
+
+      samples = sample $ fmap excessesToFlowValue $ snd $ nw valid (pure css)
   in fromJust . P.head . P.dropWhile isNothing $ samples

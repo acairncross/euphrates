@@ -32,8 +32,8 @@ spec :: Spec
 spec = do
   describe "exampleNetwork1" $ do
     it "has a max flow of 2000" $ do
-      runNetwork @System (network d4 exampleNetwork1) `shouldBe` 2000
+      runNetwork @System exampleNetwork1 (network d4) `shouldBe` 2000
 
   describe "exampleNetwork2" $ do
     it "has a max flow of 23" $ do
-      runNetwork @System (network d6 exampleNetwork2) `shouldBe` 23
+      runNetwork @System exampleNetwork2 (network d6) `shouldBe` 23
