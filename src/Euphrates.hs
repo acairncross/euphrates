@@ -27,7 +27,7 @@ minBy cmp x y = case cmp x y of
 
 -- Functions from Clash.Prelude with more convenient constraints
 at' :: forall n m a. m + 1 <= n => SNat m -> Vec n a -> a
-at' = leToPlus @(m+1) @n at 
+at' = leToPlus @(m+1) @n at
 
 init' :: forall n a. 1 <= n => Vec n a -> Vec (n-1) a
 init' = leToPlus @1 @n init
@@ -61,7 +61,7 @@ node u cs e hs fs =
 
       -- Height of each residual graph neighbor (infinite height if not a
       -- residual graph neighbor)
-      hsM = zipWith (\h rc -> if rc > 0 then Just h else Nothing) hs rcs 
+      hsM = zipWith (\h rc -> if rc > 0 then Just h else Nothing) hs rcs
 
       -- Neighbor with smallest height
       (v, hvM) =
