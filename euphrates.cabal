@@ -12,7 +12,7 @@ description:
 
 category:      Hardware
 
-extra-source-files::
+extra-source-files:
   README.md
 
 source-repository head
