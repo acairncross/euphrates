@@ -29,7 +29,7 @@ receiverT clocksPerBaud input = get >>= \case
     return Nothing
   RxBit cnt rxBit -> do
     let cnt1 = cnt + 1
-    let baudHalfDone = cnt1 == clocksPerBaud `div` 2
+    let baudHalfDone = cnt1 == clocksPerBaud `shiftR` 1
     let baudDone = cnt1 == clocksPerBaud
     let cnt' = if baudDone then 0 else cnt1
     case rxBit of
