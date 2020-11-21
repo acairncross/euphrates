@@ -51,12 +51,13 @@ receiverT clocksPerBaud input = get >>= \case
     
 -- | Receives an 8N1 UART input
 receiver
-  :: forall dom
-   . HiddenClockResetEnable dom
+  :: HiddenClockResetEnable dom
   => Word32
+  -- ^ Clocks per baud
   -> Signal dom Bit
   -- ^ UART Rx
   -> Signal dom (Maybe (BitVector 8))
+  -- ^ Output byte
 receiver clocksPerBaud urx =
   mealyState (receiverT clocksPerBaud) RxIdle (register low . register low $ urx)
 
