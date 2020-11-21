@@ -10,7 +10,7 @@ module Euphrates.Hedgehog where
 
 import Clash.Prelude
 import Data.Graph.Inductive.Query.MaxFlow (maxFlow)
-import Euphrates
+import Euphrates.Core
 import Hedgehog
 import qualified Data.Graph.Inductive as G
 import qualified Hedgehog.Gen as Gen

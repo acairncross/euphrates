@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Euphrates (node, network, excessesToFlowValue, runNetwork) where
+module Euphrates.Core (node, network, excessesToFlowValue, runNetwork) where
 
 import Clash.Prelude
 import Data.Function (on)

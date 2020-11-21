@@ -5,7 +5,7 @@
 module Euphrates.Spec (spec) where
 
 import Test.Hspec
-import Euphrates
+import Euphrates.Core
 import Clash.Prelude
 
 -- These example networks come from the tests in fgl, which in turn borrows
