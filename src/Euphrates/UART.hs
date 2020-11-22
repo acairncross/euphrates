@@ -5,7 +5,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Euphrates.UART (receiver) where
+module Euphrates.UART (uartRx) where
 
 import Clash.Prelude
 import Control.Monad.State
@@ -22,8 +22,8 @@ data RxBit n
   | StopBit (BitVector n)
   deriving (Generic, NFDataX, Eq, Show)
 
-receiverT :: KnownNat n => Word32 -> Bit -> State (RxState n) (Maybe (BitVector n))
-receiverT clocksPerBaud input = get >>= \case
+uartRxT :: KnownNat n => Word32 -> Bit -> State (RxState n) (Maybe (BitVector n))
+uartRxT clocksPerBaud input = get >>= \case
   RxIdle -> do
     when (input == low) $ put (RxBit 0 (StartBit))
     return Nothing
@@ -50,7 +50,7 @@ receiverT clocksPerBaud input = get >>= \case
           else put (RxBit cnt' rxBit) >> return Nothing
     
 -- | Receives an 8N1 UART input
-receiver
+uartRx
   :: HiddenClockResetEnable dom
   => Word32
   -- ^ Clocks per baud
@@ -58,8 +58,8 @@ receiver
   -- ^ UART Rx
   -> Signal dom (Maybe (BitVector 8))
   -- ^ Output byte
-receiver clocksPerBaud urx =
-  mealyState (receiverT clocksPerBaud) RxIdle (register low . register low $ urx)
+uartRx clocksPerBaud urx =
+  mealyState (uartRxT clocksPerBaud) RxIdle (register low . register low $ urx)
 
 shiftBitL :: forall n. KnownNat n => BitVector n -> Bit -> BitVector n
 shiftBitL bs b =
