@@ -1,14 +1,18 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Euphrates.Core (node, network, excessesToFlowValue, runNetwork) where
+module Euphrates.Core (node, network, excessesToFlowValue, runNetwork, networkRx) where
+
+import Euphrates.Utils (mealyState)
 
 import Clash.Prelude
+import Control.Monad.State
 import Data.Function (on)
 import Data.Maybe (isNothing, fromJust)
 import qualified Prelude as P
@@ -156,6 +160,30 @@ network n@SNat = \flowRst css ->
 
   in (fss, es)
 {-# NOINLINE network #-}
+
+networkRxT
+  :: forall n
+   . KnownNat n
+  => Maybe (BitVector 8)
+  -> State (Vec n (Vec n (BitVector 8)), Index (n*n)) (Bool, Vec n (Vec n (BitVector 8)))
+networkRxT datumM = get >>= \(css, i) ->
+  case datumM of
+    Nothing -> return (False, css)
+    Just datum -> do
+      let lastDatum = i == maxBound
+      let css' = unconcat (SNat @n) $ replace i datum $ concat css
+      put (css', if lastDatum then 0 else i+1)
+      return (lastDatum, css')
+
+-- | Receive bytes and fill up a matrix of capacities using them.
+networkRx
+  :: forall dom n
+   . HiddenClockResetEnable dom
+  => SNat n
+  -> Signal dom (Maybe (BitVector 8))
+  -> (Signal dom Bool, Signal dom (Vec n (Vec n (BitVector 8))))
+networkRx n@SNat input =
+  unbundle $ mealyState networkRxT (replicate n $ replicate n 0, 0) input
 
 -- | Given node excesses, return 'Just' the flow value if there is in fact a
 -- a flow, and return 'Nothing' otherwise (e.g. if there is a pre-flow).
