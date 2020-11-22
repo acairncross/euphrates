@@ -7,6 +7,8 @@
 
 module Euphrates.UART (uartRx) where
 
+import Euphrates.Utils (mealyState)
+
 import Clash.Prelude
 import Control.Monad.State
 import Data.Word
@@ -65,11 +67,3 @@ shiftBitL :: forall n. KnownNat n => BitVector n -> Bit -> BitVector n
 shiftBitL bs b =
   let (_, bs') = bitCoerce $ bs ++# pack b :: (Bit, BitVector n)
   in bs'
-
-mealyState
- :: HiddenClockResetEnable dom
- => NFDataX s
- => (i -> State s o) -> s -> (Signal dom i -> Signal dom o)
-mealyState f = mealy step
-  where
-    step s x = let (y, s') = runState (f x) s in (s', y)
