@@ -94,11 +94,11 @@ network
   => SNat n
   -> (HiddenClockResetEnable dom
     => Signal dom Bool
-    -- ^ Valid / Reset Flows
+    -- Valid / Reset Flows
     -> Signal dom (Vec n (Vec n a))
-    -- ^ Capacities
+    -- Capacities
     -> (Signal dom (Vec n (Vec n a)), Signal dom (Vec n a)))
-    -- ^ (Flows, Excesses)
+    -- (Flows, Excesses)
 network n@SNat = \flowRst css ->
   let nodes :: HiddenClockResetEnable dom => Signal dom (Vec n (a, Vec n a))
       nodes = bundle $
