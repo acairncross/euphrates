@@ -1,12 +1,17 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Euphrates.Spec (spec) where
 
-import Test.Hspec
-import Euphrates.Core
 import Clash.Prelude
+import Data.List (intercalate)
+import Data.Maybe (catMaybes)
+import Euphrates.Core
+import Euphrates.UART (uartRx)
+import Test.Hspec
+import qualified Prelude as P
 
 -- These example networks come from the tests in fgl, which in turn borrows
 -- them from "Introduction to Algorithms" (Cormen, Leiserson, Rivest).
@@ -28,6 +33,16 @@ exampleNetwork2 =
   (0 :> 0 :> 0 :> 0 :> 0 :> 0 :> Nil) :>
   Nil
 
+to8N1 :: BitPack a => BitSize a ~ 8 => Int -> a -> [Bit]
+to8N1 clocksPerBaud n =
+  P.replicate clocksPerBaud low P.++
+  P.concatMap (P.replicate clocksPerBaud) (toList . bv2v . pack $ n) P.++
+  P.replicate clocksPerBaud high
+
+to8N1Multi :: BitPack a => BitSize a ~ 8 => Int -> Int -> [a] -> [Bit]
+to8N1Multi clocksPerBaud clocksPerIdle xs =
+  intercalate (P.replicate clocksPerIdle high) (P.map (to8N1 clocksPerBaud) xs)
+
 spec :: Spec
 spec = do
   describe "exampleNetwork1" $ do
@@ -37,3 +52,12 @@ spec = do
   describe "exampleNetwork2" $ do
     it "has a max flow of 23" $ do
       runNetwork @System exampleNetwork2 (network d6) `shouldBe` 23
+
+  describe "UART receiver" $ do
+    it "receives bytes" $ do
+      let clocksPerBaud = 111
+      let clocksPerIdle = 13
+      let values = [12, 34, 56, 78] :: [Unsigned 8]
+      let serializedValues = to8N1Multi (fromIntegral clocksPerBaud) clocksPerIdle values
+      let output = simulate @System (uartRx clocksPerBaud) serializedValues
+      (P.take (P.length values) . P.map unpack . catMaybes $ output) `shouldBe` values
