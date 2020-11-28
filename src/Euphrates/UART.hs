@@ -41,7 +41,7 @@ uartRxT clocksPerBaud input = get >>= \case
         return Nothing
       DataBit datum i -> do
         if baudHalfDone
-          then put $ RxBit cnt' (DataBit (shiftBitL datum input) i)
+          then put $ RxBit cnt' (DataBit (shiftBitR datum input) i)
           else if baudDone
             then put $ RxBit cnt' (if i == maxBound then StopBit datum else DataBit datum (i+1))
             else put $ RxBit cnt' rxBit
@@ -51,7 +51,7 @@ uartRxT clocksPerBaud input = get >>= \case
           then put RxIdle >> return (Just datum)
           else put (RxBit cnt' rxBit) >> return Nothing
     
--- | Receives an 8N1 UART input
+-- | Receives an 8N1 UART input. Expects LSB first.
 uartRx
   :: HiddenClockResetEnable dom
   => Word32
@@ -63,7 +63,7 @@ uartRx
 uartRx clocksPerBaud urx =
   mealyState (uartRxT clocksPerBaud) RxIdle (register low . register low $ urx)
 
-shiftBitL :: forall n. KnownNat n => BitVector n -> Bit -> BitVector n
-shiftBitL bs b =
-  let (_, bs') = bitCoerce $ bs ++# pack b :: (Bit, BitVector n)
+shiftBitR :: forall n. KnownNat n => BitVector n -> Bit -> BitVector n
+shiftBitR bs b =
+  let (bs', _) = bitCoerce $ pack b ++# bs :: (BitVector n, Bit)
   in bs'

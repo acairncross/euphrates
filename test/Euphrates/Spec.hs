@@ -36,7 +36,7 @@ exampleNetwork2 =
 to8N1 :: BitPack a => BitSize a ~ 8 => Int -> a -> [Bit]
 to8N1 clocksPerBaud n =
   P.replicate clocksPerBaud low P.++
-  P.concatMap (P.replicate clocksPerBaud) (toList . bv2v . pack $ n) P.++
+  P.concatMap (P.replicate clocksPerBaud) (toList . reverse . bv2v . pack $ n) P.++
   P.replicate clocksPerBaud high
 
 to8N1Multi :: BitPack a => BitSize a ~ 8 => Int -> Int -> [a] -> [Bit]
