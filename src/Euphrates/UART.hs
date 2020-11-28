@@ -61,7 +61,8 @@ uartRx
   -> Signal dom (Maybe (BitVector 8))
   -- ^ Output byte
 uartRx clocksPerBaud urx =
-  mealyState (uartRxT clocksPerBaud) RxIdle (register low . register low $ urx)
+  let urx'' = register high . register high $ urx
+  in mealyState (uartRxT clocksPerBaud) RxIdle urx''
 
 shiftBitR :: forall n. KnownNat n => BitVector n -> Bit -> BitVector n
 shiftBitR bs b =
