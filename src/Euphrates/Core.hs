@@ -14,7 +14,7 @@ import Euphrates.Utils (mealyState)
 import Clash.Prelude
 import Control.Monad.State
 import Data.Function (on)
-import Data.Maybe (isNothing, fromJust)
+import Data.Maybe (isNothing, fromJust, isJust)
 import qualified Prelude as P
 
 -- Ordering on a extended with positive infinity.
@@ -97,19 +97,24 @@ network
   => NFDataX a
   => SNat n
   -> (HiddenClockResetEnable dom
-    => Signal dom Bool
-    -- Valid / Reset Flows
-    -> Signal dom (Vec n (Vec n a))
+    => Signal dom (Maybe (Vec n (Vec n a)))
     -- Capacities
     -> (Signal dom (Vec n (Vec n a)), Signal dom (Vec n a)))
     -- (Flows, Excesses)
-network n@SNat = \flowRst css ->
+network n@SNat = \cssM ->
   let nodes :: HiddenClockResetEnable dom => Signal dom (Vec n (a, Vec n a))
       nodes = bundle $
         smap @n
           (\u () ->
             (node @n u) <$> (at' u <$> css) <*> (at' u <$> es) <*> hs <*> (at' u <$> fss))
           (replicate n ())
+
+      stickyCssM = liftA2 (<|>) cssM (register Nothing stickyCssM)
+
+      css =
+        mux (isJust <$> stickyCssM)
+          (fromJust <$> stickyCssM)
+          (pure $ replicate n $ replicate n 0)
 
       -- Heights'
       hs' :: HiddenClockResetEnable dom => Signal dom (Vec n a)
@@ -150,8 +155,8 @@ network n@SNat = \flowRst css ->
             fss0 = replicate n $ replicate n 0
 
         in
-          mux flowRst
-            (capacitiesToInitialFlows <$> css)
+          mux (isJust <$> cssM)
+            (capacitiesToInitialFlows . fromJust <$> cssM)
             (register fss0 (fss ^+^ fssD ^+^ fssDT))
 
       -- Excesses
@@ -165,15 +170,15 @@ networkRxT
   :: forall n
    . KnownNat n
   => Maybe (BitVector 8)
-  -> State (Vec n (Vec n (BitVector 8)), Index (n*n)) (Bool, Vec n (Vec n (BitVector 8)))
+  -> State (Vec n (Vec n (BitVector 8)), Index (n*n)) (Maybe (Vec n (Vec n (BitVector 8))))
 networkRxT datumM = get >>= \(css, i) ->
   case datumM of
-    Nothing -> return (False, css)
+    Nothing -> return Nothing
     Just datum -> do
       let lastDatum = i == maxBound
       let css' = unconcat (SNat @n) $ replace i datum $ concat css
       put (css', if lastDatum then 0 else i+1)
-      return (lastDatum, css')
+      return $ if lastDatum then Just css' else Nothing
 
 -- | Receive bytes and fill up a matrix of capacities using them.
 networkRx
@@ -181,7 +186,7 @@ networkRx
    . HiddenClockResetEnable dom
   => SNat n
   -> Signal dom (Maybe (BitVector 8))
-  -> (Signal dom Bool, Signal dom (Vec n (Vec n (BitVector 8))))
+  -> Signal dom (Maybe (Vec n (Vec n (BitVector 8))))
 networkRx n@SNat input =
   unbundle $ mealyState networkRxT (replicate n $ replicate n 0, 0) input
 
@@ -209,13 +214,12 @@ runNetwork
   => Vec n (Vec n a)
   -- ^ Capacities
   -> (HiddenClockResetEnable dom
-    => Signal dom Bool
-    -> Signal dom (Vec n (Vec n a))
+    => Signal dom (Maybe (Vec n (Vec n a)))
     -> (Signal dom (Vec n (Vec n a)), Signal dom (Vec n a)))
   -> a
 runNetwork css nw =
-  let valid :: HiddenClockResetEnable dom => Signal dom Bool
-      valid = register True $ pure False
+  let cssM :: HiddenClockResetEnable dom => Signal dom (Maybe (Vec n (Vec n a)))
+      cssM = register (Just css) $ pure Nothing
 
-      samples = sample $ fmap excessesToFlowValue $ snd $ nw valid (pure css)
+      samples = sample $ fmap excessesToFlowValue $ snd $ nw cssM
   in fromJust . P.head . P.dropWhile isNothing $ samples
