@@ -189,6 +189,7 @@ networkRx
   -> Signal dom (Maybe (Vec n (Vec n (BitVector 8))))
 networkRx n@SNat input =
   unbundle $ mealyState networkRxT (replicate n $ replicate n 0, 0) input
+{-# NOINLINE networkRx #-}
 
 -- | Given node excesses, return 'Just' the flow value if there is in fact a
 -- a flow, and return 'Nothing' otherwise (e.g. if there is a pre-flow).

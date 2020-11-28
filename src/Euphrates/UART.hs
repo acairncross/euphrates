@@ -63,6 +63,7 @@ uartRx
 uartRx clocksPerBaud urx =
   let urx'' = register high . register high $ urx
   in mealyState (uartRxT clocksPerBaud) RxIdle urx''
+{-# NOINLINE uartRx #-}
 
 shiftBitR :: forall n. KnownNat n => BitVector n -> Bit -> BitVector n
 shiftBitR bs b =
