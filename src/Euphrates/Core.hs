@@ -9,7 +9,7 @@
 
 module Euphrates.Core (node, network, excessesToFlowValue, runNetwork, networkRx) where
 
-import Euphrates.Utils (mealyState)
+import Euphrates.Utils (mealyState, stickify)
 
 import Clash.Prelude
 import Control.Monad.State
@@ -109,7 +109,7 @@ network n@SNat = \cssM ->
             (node @n u) <$> (at' u <$> css) <*> (at' u <$> es) <*> hs <*> (at' u <$> fss))
           (replicate n ())
 
-      stickyCssM = liftA2 (<|>) cssM (register Nothing stickyCssM)
+      stickyCssM = stickify cssM
 
       css =
         mux (isJust <$> stickyCssM)
