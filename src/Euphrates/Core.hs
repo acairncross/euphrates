@@ -102,7 +102,7 @@ network
     -> (Signal dom (Vec n (Vec n a)), Signal dom (Vec n a)))
     -- (Flows, Excesses)
 network n@SNat = \cssM ->
-  let nodes :: HiddenClockResetEnable dom => Signal dom (Vec n (a, Vec n a))
+  let nodes :: Signal dom (Vec n (a, Vec n a))
       nodes = bundle $
         smap @n
           (\u () ->
@@ -117,9 +117,9 @@ network n@SNat = \cssM ->
           (pure $ replicate n $ replicate n 0)
 
       -- Heights'
-      hs' :: HiddenClockResetEnable dom => Signal dom (Vec n a)
+      hs' :: Signal dom (Vec n a)
       -- Flow updates/deltas
-      fssD :: HiddenClockResetEnable dom => Signal dom (Vec n (Vec n a))
+      fssD :: Signal dom (Vec n (Vec n a))
       (hs', fssD) =
         let (<^$^>) = fmap . map
         in (fst <^$^> nodes, snd <^$^> nodes)
@@ -129,7 +129,7 @@ network n@SNat = \cssM ->
       hs0 = replace (0 :: Int) (snatToNum n) (replicate n 0)
 
       -- Heights
-      hs :: HiddenClockResetEnable dom => Signal dom (Vec n a)
+      hs :: Signal dom (Vec n a)
       hs = register hs0 hs'
 
       -- Initially all flows set to 0 except outgoing edges from the source
@@ -142,7 +142,7 @@ network n@SNat = \cssM ->
           $ replicate n
           $ replicate n 0
 
-      fss :: HiddenClockResetEnable dom => Signal dom (Vec n (Vec n a))
+      fss :: Signal dom (Vec n (Vec n a))
       fss =
         let -- The equal and opposite flow update to fssD
             fssDT :: Signal dom (Vec n (Vec n a))
@@ -160,7 +160,7 @@ network n@SNat = \cssM ->
             (register fss0 (fss ^+^ fssD ^+^ fssDT))
 
       -- Excesses
-      es :: HiddenClockResetEnable dom => Signal dom (Vec n a)
+      es :: Signal dom (Vec n a)
       es = (fmap . map) (negate . sum) fss
 
   in (fss, es)
