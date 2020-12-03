@@ -21,6 +21,7 @@ source-repository head
 
 library
   exposed-modules:  Euphrates.Core
+                    Euphrates.Top
                     Euphrates.UART
                     Euphrates.Utils
   hs-source-dirs:   src
@@ -41,6 +42,7 @@ library
     ghc-typelits-natnormalise,
     lens,
     mtl,
+    reflection,
 
 executable serial
   main-is:          bin/Serial.hs

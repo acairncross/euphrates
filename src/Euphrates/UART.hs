@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Euphrates.UART (uartRx) where
 
@@ -53,15 +54,18 @@ uartRxT clocksPerBaud input = get >>= \case
     
 -- | Receives an 8N1 UART input. Expects LSB first.
 uartRx
-  :: HiddenClockResetEnable dom
-  => Word32
-  -- ^ Clocks per baud
+  :: forall dom baudDuration
+   . HiddenClockResetEnable dom
+  => SNat baudDuration
+  -- ^ Duration of baud in picoseconds
   -> Signal dom Bit
   -- ^ UART Rx
   -> Signal dom (Maybe (BitVector 8))
   -- ^ Output byte
-uartRx clocksPerBaud urx =
-  let urx'' = register high . register high $ urx
+uartRx baudDuration urx =
+  let clocksPerBaud = fromIntegral $
+        snatToInteger baudDuration `div` snatToInteger (clockPeriod @dom)
+      urx'' = register high . register high $ urx
   in mealyState (uartRxT clocksPerBaud) RxIdle urx''
 {-# NOINLINE uartRx #-}
 

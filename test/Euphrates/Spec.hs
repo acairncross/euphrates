@@ -5,11 +5,14 @@
 
 module Euphrates.Spec (spec) where
 
+import Euphrates.Core
+import Euphrates.UART (uartRx)
+import Euphrates.Utils (reifySNat)
+
 import Clash.Prelude
 import Data.List (intercalate)
 import Data.Maybe (catMaybes)
-import Euphrates.Core
-import Euphrates.UART (uartRx)
+import Numeric.Natural (Natural)
 import Test.Hspec
 import qualified Prelude as P
 
@@ -55,9 +58,10 @@ spec = do
 
   describe "UART receiver" $ do
     it "receives bytes" $ do
-      let clocksPerBaud = 111
+      let clocksPerBaud = 111 :: Natural
       let clocksPerIdle = 13
+      let baudDuration = clocksPerBaud * snatToNatural (clockPeriod @System)
       let values = [12, 34, 56, 78] :: [Unsigned 8]
       let serializedValues = to8N1Multi (fromIntegral clocksPerBaud) clocksPerIdle values
-      let output = simulate @System (uartRx clocksPerBaud) serializedValues
+      let output = simulate @System (reifySNat baudDuration uartRx) serializedValues
       (P.take (P.length values) . P.map unpack . catMaybes $ output) `shouldBe` values
