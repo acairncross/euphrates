@@ -35,7 +35,7 @@ euphrates' input =
   & network @_ @_ @(Signed 8) d4
   & (\(_flows, excesses) -> excesses)
   & register (repeat 0)
-  & fmap ((maybe 0 id) . excessesToFlowValue)
+  & fmap (maybe 0 id . excessesToFlowValue)
 
 euphrates
   :: "clk_25mhz" ::: Clock Dom25
