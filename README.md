@@ -13,3 +13,10 @@ Clash to use, then run Clash:
 cabal build --write-ghc-environment-files=always euphrates
 cabal run clash -- Euphrates.Top --verilog
 ```
+
+Or run the Shake based build system to run Clash and synthesize a bitstream for
+the ULX3S:
+
+```sh
+cabal run shake
+```
