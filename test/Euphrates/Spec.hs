@@ -6,7 +6,7 @@
 module Euphrates.Spec (spec) where
 
 import Euphrates.Core
-import Euphrates.UART (uartRx)
+import Euphrates.UART (uartRx, uartTx)
 import Euphrates.Utils (reifySNat)
 
 import Clash.Prelude
@@ -46,6 +46,10 @@ to8N1Multi :: BitPack a => BitSize a ~ 8 => Int -> Int -> [a] -> [Bit]
 to8N1Multi clocksPerBaud clocksPerIdle xs =
   intercalate (P.replicate clocksPerIdle high) (P.map (to8N1 clocksPerBaud) xs)
 
+spaceValues :: Int -> Int -> [a] -> [Maybe a]
+spaceValues clocksPerBaud clocksPerIdle xs =
+  P.concatMap (\x -> Just x : P.replicate (10 * clocksPerBaud + clocksPerIdle) Nothing) xs
+
 spec :: Spec
 spec = do
   describe "exampleNetwork1" $ do
@@ -56,12 +60,25 @@ spec = do
     it "has a max flow of 23" $ do
       runNetwork @System exampleNetwork2 (network d6) `shouldBe` 23
 
-  describe "UART receiver" $ do
-    it "receives bytes" $ do
-      let clocksPerBaud = 111 :: Natural
-      let clocksPerIdle = 13
-      let baudDuration = clocksPerBaud * snatToNatural (clockPeriod @System)
-      let values = [12, 34, 56, 78] :: [Unsigned 8]
+  describe "UART" $ do
+    let clocksPerBaud = 111 :: Natural
+    let clocksPerIdle = 13
+    let baudDuration = clocksPerBaud * snatToNatural (clockPeriod @System)
+    let values = [12, 34, 56, 78] :: [BitVector 8]
+
+    it "receiver" $ do
       let serializedValues = to8N1Multi (fromIntegral clocksPerBaud) clocksPerIdle values
       let output = simulate @System (reifySNat baudDuration uartRx) serializedValues
-      (P.take (P.length values) . P.map unpack . catMaybes $ output) `shouldBe` values
+      (P.take (P.length values) . catMaybes $ output) `shouldBe` values
+
+    it "round trip" $ do
+      let spacedValues =
+            spaceValues (fromIntegral clocksPerBaud) clocksPerIdle values
+              P.++ P.repeat Nothing
+      let uartTxRx
+            :: HiddenClockResetEnable dom
+            => Signal dom (Maybe (BitVector 8))
+            -> Signal dom (Maybe (BitVector 8))
+          uartTxRx = reifySNat baudDuration uartRx . fst . reifySNat baudDuration uartTx
+      let output = simulate @System uartTxRx spacedValues
+      (P.take (P.length values) . catMaybes $ output) `shouldBe` values
