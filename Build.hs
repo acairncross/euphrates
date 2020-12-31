@@ -60,6 +60,7 @@ main = shakeArgs shakeOptions{shakeFiles="_build"} $ do
     need [".ghc.environment" <.> ghcPlatformAndVersionString platform version]
     cmd_ "cabal run clash -- -fclash-hdldir _build --verilog Euphrates.Top"
 
+  -- FIXME Doesn't really work, this ought to depend on all the sources
   ".ghc.environment.*" %> \_ -> do
     need ["euphrates.cabal"]
     cmd_ "cabal build --write-ghc-environment-files=always"
