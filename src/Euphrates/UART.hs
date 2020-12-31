@@ -88,25 +88,28 @@ data TxBit n
 uartTxT :: KnownNat n => Word32 -> Maybe (BitVector n) -> State (TxState n) (Bit, Bool)
 uartTxT clocksPerBaud input = get >>= \case
   TxIdle -> case input of
-    Just input' -> put (TxBit clocksPerBaud (TxStartBit input')) >> return (high, True)
+    Just input' -> put (TxBit 0 (TxStartBit input')) >> return (high, True)
     Nothing -> return (high, False)
-  TxBit cnt txBit ->
+  TxBit cnt txBit -> do
+    let cnt1 = cnt + 1
+    let baudDone = cnt1 == clocksPerBaud
+    let cnt' = if baudDone then 0 else cnt1
     case txBit of
       TxStartBit datum -> do
-        put $ if cnt == 0
-          then TxBit clocksPerBaud (TxDataBit datum 0)
-          else TxBit (cnt - 1) txBit
+        put $ if baudDone
+          then TxBit cnt' (TxDataBit datum 0)
+          else TxBit cnt' txBit
         return (low, True)
       TxDataBit datum i -> do
-        put $ if cnt == 0
-          then TxBit clocksPerBaud $
+        put $ if baudDone
+          then TxBit cnt' $
             if i == maxBound then TxStopBit else TxDataBit (rotateR datum 1) (i+1)
-          else TxBit (cnt - 1) (TxDataBit datum i)
+          else TxBit cnt' (TxDataBit datum i)
         return (lsb datum, True)
       TxStopBit -> do
-        put $ if cnt == 0
+        put $ if baudDone
           then TxIdle
-          else TxBit (cnt - 1) TxStopBit
+          else TxBit cnt' TxStopBit
         return (high, True)
 
 uartTx

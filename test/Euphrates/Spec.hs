@@ -62,7 +62,7 @@ spec = do
 
   describe "UART" $ do
     let clocksPerBaud = 111 :: Natural
-    let clocksPerIdle = 13
+    let clocksPerIdle = 0
     let baudDuration = clocksPerBaud * snatToNatural (clockPeriod @System)
     let values = [12, 34, 56, 78] :: [BitVector 8]
 
