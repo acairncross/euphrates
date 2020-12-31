@@ -71,7 +71,7 @@ spec = do
       let output = simulate @System (reifySNat baudDuration uartRx) serializedValues
       (P.take (P.length values) . catMaybes $ output) `shouldBe` values
 
-    it "round trips bits (transmit then receive)" $ do
+    describe "round trips bits (transmit then receive)" $ do
       let spacedValues =
             spaceValues (fromIntegral clocksPerBaud) clocksPerIdle values
               P.++ P.repeat Nothing
@@ -80,5 +80,12 @@ spec = do
             => Signal dom (Maybe (BitVector 8))
             -> Signal dom (Maybe (BitVector 8))
           uartTxRx = reifySNat baudDuration uartRx . fst . reifySNat baudDuration uartTx
-      let output = simulate @System uartTxRx spacedValues
-      (P.take (P.length values) . catMaybes $ output) `shouldBe` values
+
+      it "once" $ do
+        let output = simulate @System uartTxRx spacedValues
+        (P.take (P.length values) . catMaybes $ output) `shouldBe` values
+
+      -- Note that this also involves a transmit -> receive
+      it "twice" $ do
+        let output = simulate @System (uartTxRx . uartTxRx) spacedValues
+        (P.take (P.length values) . catMaybes $ output) `shouldBe` values
