@@ -66,12 +66,12 @@ spec = do
     let baudDuration = clocksPerBaud * snatToNatural (clockPeriod @System)
     let values = [12, 34, 56, 78] :: [BitVector 8]
 
-    it "receiver" $ do
+    it "receives bits" $ do
       let serializedValues = to8N1Multi (fromIntegral clocksPerBaud) clocksPerIdle values
       let output = simulate @System (reifySNat baudDuration uartRx) serializedValues
       (P.take (P.length values) . catMaybes $ output) `shouldBe` values
 
-    it "round trip" $ do
+    it "round trips bits (transmit then receive)" $ do
       let spacedValues =
             spaceValues (fromIntegral clocksPerBaud) clocksPerIdle values
               P.++ P.repeat Nothing
