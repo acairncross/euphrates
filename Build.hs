@@ -6,10 +6,10 @@ import Development.Shake.FilePath
 import Development.Shake.Classes
 
 import Distribution.Simple.GHC (ghcPlatformAndVersionString)
-import Distribution.System (Platform (..), buildArch, buildOS)
+import Distribution.System (Platform (Platform), buildArch, buildOS)
 import Distribution.Types.Version (mkVersion)
 
-import Clash.Driver.Types (Manifest (..))
+import Clash.Driver.Types (Manifest (fileNames))
 import Data.List.Split (splitOn)
 
 -- A string like "8.10.2"
